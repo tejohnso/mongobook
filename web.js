@@ -32,24 +32,58 @@ app.get('/img/*', function(request, response, next) {
 
 app.get('/', function(request, response, next) { 
    conLog('Serving path: ' + request.path);
-   var templateVars = mongostash.templateCollections['mongobook'];
-   mu.compileAndRender('mu/mongobook.mu', templateVars).pipe(response);
+   var templateVars = mongostash.templateCollections.mongobook;
+   conLog(templateVars);
+   //mu.compileAndRender('mu/mongobook.mu', templateVars).pipe(response);
+   mu.compileAndRender('mu/mongobook.mu', templateVars).on('data', function(data) {
+      response.write(data);      
+   }).on('end', function() {
+      response.end();
+   });
+});
+
+app.get('/address/*', function(request, response, next) {
+   //return json object containing data for selected address
+   //or new address if request contains no target address to fetch
+
+   //request.body.tabID = Math.random().toString().substr(2); 
+   conLog('get path is: ' + request.path);
+   var docID = request.path.substr(9);
+   conLog('fetching id: ' + docID);
+   var templateVars = {"tabID": Math.random().toString().substr(2)};
+   var returnDocument = function(templateVars) {
+      //process the tab title template, then the address details template - return json
+      response.write('{"title": "');
+      mu.compileAndRender('mu/addressTabTitle.mu', templateVars).on('data', 
+      function(data) {
+         response.write(data.toString());
+      }).on('end', function() {
+         response.write('", "address": "');
+         mu.compileAndRender('mu/address.mu', templateVars).on('data', function(data) {
+            response.write(data.toString());
+         }).on('end', function() {
+            response.write('"}');
+            response.end();
+         });
+      });
+   };
+
+   if(docID !=='') {
+      mongostash.getDocument('_id', docID, 'addresses', templateVars, returnDocument);
+   }else{
+      returnDocument(templateVars);
+   }
 });
 
 app.post('/address', function(request, response, next) {
-   //return json object containing data for selected address
-   //or new address if request contains no target address to fetch
-   request.body.tabID = Math.random().toString().substr(2); 
-   conLog(request.body);
-   response.write('{"title": "');
-   mu.compileAndRender('mu/addressTabTitle.mu', request.body).on('data', function(data) {
-      response.write(data.toString());
-   }).on('end', function() {
-      response.write('", "address": "');
-      mu.compileAndRender('mu/address.mu', request.body).on('data', function(data) {
-         response.write(data.toString());
-      }).on('end', function() {
-         response.write('"}');
-         response.end();});
-      });
+   conLog('post path is: ' + request.path);
+   var id = request.body.docID;
+   delete request.body.docID; //we don't need to save a duplicate of the _id field
+   conLog('body is: ' + JSON.stringify(request.body));
+   conLog('updating ID (blank means new doc): ' + id);
+   mongostash.setDocument(request.body, id, 'addresses', function(err, ret) {
+      conLog('upsert return: ' + JSON.stringify(ret));
+      if(err){conLog(err);}
+      response.end(JSON.stringify(ret));
+   });
 });

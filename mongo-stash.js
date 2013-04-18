@@ -121,7 +121,11 @@ loadCollections.getDocument = function(searchElement, searchTarget, templateName
 loadCollections.setDocument = function(contents, target, collection, cb) {
    loadCollections.db.collection(collection, function(err, coll) {
       if (err) {cb(err); return;}
-      coll.upsert(target, contents, function(err, res) {
+      if (target.length > 1) {
+         target = mongo.BSONPure.ObjectID.createFromHexString(target);
+      }
+      coll.findAndModify({"_id": target}, {}, contents, 
+      {"upsert": true, "new": true}, function(err, res) {
          if (err) {cb(err); return;}
          cb(null, res);
       });

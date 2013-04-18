@@ -4,7 +4,7 @@
          <label class='control-label' for='first'>first</label>
          <div class='controls'>
             <div class='input-append'>
-               <input type='text' id='first' placeholder='{{first}}'>
+               <input type='text' name='first' placeholder='{{first}}'>
                <button class='btn' type='button'><i class='icon-edit'></i></button>
             </div>
          </div>
@@ -13,7 +13,7 @@
          <label class='control-label' for='last'>last</label>
          <div class='controls'>
             <div class='input-append'>
-               <input type='text' id='last' placeholder='{{last}}'>
+               <input type='text' name='last' placeholder='{{last}}'>
                <button class='btn' type='button'><i class='icon-edit'></i></button>
             </div>
          </div>
@@ -22,18 +22,14 @@
          <label class='control-label' for='email'>email</label>
          <div class='controls'>
             <div class='input-append'>
-               <input type='text' id='email' placeholder='{{email}}'>
+               <input type='text' name='email' placeholder='{{email}}'>
                <button class='btn' type='button'><i class='icon-edit'></i></button>
             </div>
          </div>
       </div>
       <div class='form-actions'>
+         <input type='hidden' name='docID' value='{{_id}}'>
          <button type='submit' class='btn'>Save</button>
       </div>
    </div>
 </div>
-<!--
-   <div><span class='label label-info'>first </span>{{first}}</div>
-   <div><span class='label label-info'>last </span>{{last}}</div>
-   <div><span class='label label-info'>email </span>{{email}}</div>
--->

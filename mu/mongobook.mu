@@ -7,7 +7,7 @@
       <link href="mongobook.css" rel="stylesheet" media="screen">
    </head>
    <body>
-      <div class="container">
+      <div class="container-fluid">
          <div class="row-fluid">
             <div class="span12">
                <div class="page-header">

@@ -1,16 +1,17 @@
 $('.btn-primary').on('click', function(event) {
-   appendNewAddressTab({});
+   appendNewAddressTab();
    return false; //stop propagation
 });
 
-var appendNewAddressTab = function(newAddressData) {
-   //fetch an address - or create a blank one if newAddressData is empty json
-
+var appendNewAddressTab = function(docID) {
+   //fetch an address - or create a blank one 
+console.log(docID);
+console.log(typeof docID);
    $.ajax({
-      url: '/address',
-      type: 'POST',
-      data: newAddressData,
+      url: '/address/' + (docID || ''),
+      type: 'GET',
       success: function(data) {
+         //data contains {title: (title tab html), address: (address form html)}
          data = data.replace(/[\n\r]/g, ' ');
          data = JSON.parse(data);
          $('#addresses .tab-pane.active').removeClass('active');
@@ -24,6 +25,14 @@ var appendNewAddressTab = function(newAddressData) {
 };
 
 var saveAddress = function(event){
-   alert('saving ' + event.target);
+   var button = event.target;
+   $.ajax({
+      url: '/address',
+      type: 'POST',
+      data: $(button).closest('form').serialize(),
+      success: function(data) {
+         $(button).siblings('input[name=docID]').val(JSON.parse(data)._id);
+      }
+   });
    return false;
 };
