@@ -1,1 +1,1 @@
-<li class='active'><a href='#{{tabID}}'>{{first}} {{last}}</a></li>
+<li><a data-toggle='tab' href='#{{tabID}}'>-{{first}} {{last}}-</a></li>

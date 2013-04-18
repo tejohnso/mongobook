@@ -13,11 +13,17 @@ var appendNewAddressTab = function(newAddressData) {
       success: function(data) {
          data = data.replace(/[\n\r]/g, ' ');
          data = JSON.parse(data);
-         console.log(data);
-      //   $('#addresses .tab-pane.active').removeClass('active');
-      //   $('#addresses .nav-tabs .active').tab('hide');
-         $('.tab-content').prepend(data.address);
+         $('#addresses .tab-pane.active').removeClass('active');
+         var newTab = $(data.address).prependTo('.tab-content');
+         newTab.find('.icon-edit').closest('.btn').on('click', function(event) {
+               $(this).prev().focus();
+         });
+         newTab.find('.form-actions').find('button[type=submit]').on('click', saveAddress);
          $('#tabs').prepend(data.title);
       }});
 };
 
+var saveAddress = function(event){
+   alert('saving ' + event.target);
+   return false;
+};
