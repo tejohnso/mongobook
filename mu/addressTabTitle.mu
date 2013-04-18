@@ -1,1 +1,1 @@
-<li class='active'><a href='#{{first}}'>{{first}}</a></li>
+<li class='active'><a href='#{{tabID}}'>{{first}} {{last}}</a></li>

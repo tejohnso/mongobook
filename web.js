@@ -39,7 +39,7 @@ app.get('/', function(request, response, next) {
 app.post('/address', function(request, response, next) {
    //return json object containing data for selected address
    //or new address if request contains no target address to fetch
-  
+   request.body.tabID = Math.random().toString().substr(2); 
    conLog(request.body);
    response.write('{"title": "');
    mu.compileAndRender('mu/addressTabTitle.mu', request.body).on('data', function(data) {

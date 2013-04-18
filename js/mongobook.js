@@ -14,8 +14,8 @@ var appendNewAddressTab = function(newAddressData) {
          data = data.replace(/[\n\r]/g, ' ');
          data = JSON.parse(data);
          console.log(data);
-         $('#addresses .tab-pane.active').removeClass('active');
-         $('#addresses .nav-tabs .active').removeClass('active');
+//         $('#addresses .tab-pane.active').removeClass('active');
+         $('#addresses .nav-tabs .active').tab('hide');
          $('.tab-content').prepend(data.address);
          $('#tabs').prepend(data.title);
       }});

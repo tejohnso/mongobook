@@ -1,4 +1,4 @@
-<div class='tab-pane active' id='{{first}}'>
+<div class='tab-pane active' id='{{tabID}}'>
    <form class='form-horizontal'>
       <div class='control-group'>
          <label class='control-label' for='first'>first</label>
