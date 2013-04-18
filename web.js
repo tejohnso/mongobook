@@ -25,6 +25,11 @@ app.use(express.static(__dirname + '/img'));
 app.use(express.static(__dirname + '/js'));
 app.use(express.bodyParser());
 
+app.get('/img/*', function(request, response, next) {
+   //bootstrap default builds include an img path for the glyphs. 
+   response.redirect('/' + request.path.substr(5));
+});
+
 app.get('/', function(request, response, next) { 
    conLog('Serving path: ' + request.path);
    var templateVars = mongostash.templateCollections['mongobook'];

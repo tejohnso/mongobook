@@ -15,6 +15,7 @@ var appendNewAddressTab = function(newAddressData) {
          data = JSON.parse(data);
          console.log(data);
          $('#addresses .tab-pane.active').removeClass('active');
+         $('#addresses .nav-tabs .active').removeClass('active');
          $('.tab-content').prepend(data.address);
          $('#tabs').prepend(data.title);
       }});

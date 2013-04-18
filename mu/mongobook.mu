@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
    <head>
-      <title>mongobook demo</title>
+      <title>MongoBook demo</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="bootstrap.min.css" rel="stylesheet" media="screen">
       <link href="mongobook.css" rel="stylesheet" media="screen">
