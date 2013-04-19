@@ -22,6 +22,7 @@
                         <table class="table table-striped table-hover">
                            <thead>
                               <tr>
+                                 <th class="hidden"></th>
                                  <th>First</th>
                                  <th>Last</th>
                                  <th>Email</th>
@@ -30,6 +31,7 @@
                            <tbody>
                               {{#addresses}}
                               <tr>
+                                 <td class="hidden">{{_id}}</td>
                                  <td>{{first}}</td>
                                  <td>{{last}}</td>
                                  <td>{{email}}</td>

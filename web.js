@@ -17,7 +17,8 @@ var startListening = function(err) {
 };
 
 var dbURL = process.env.MONGOHQ_URL_MONGOBOOK;
-var mongostash = require('./mongo-stash.js')(__dirname + '/mu', dbURL, startListening);
+var mongostash = require('./mongo-stash.js')(__dirname + '/mu', 
+    dbURL, startListening);
 
 app.use(express.static(__dirname + '/css'));
 app.use(express.static(__dirname + '/html'));
@@ -51,8 +52,9 @@ app.get('/address/*', function(request, response, next) {
    var docID = request.path.substr(9);
    conLog('fetching id: ' + docID);
    var templateVars = {"tabID": Math.random().toString().substr(2)};
-   var returnDocument = function(templateVars) {
+   var returnDocument = function(err, templateVars) {
       //process the tab title template, then the address details template - return json
+      if(err) {conLog(err); response.end();}
       response.write('{"title": "');
       mu.compileAndRender('mu/addressTabTitle.mu', templateVars).on('data', 
       function(data) {
@@ -71,7 +73,7 @@ app.get('/address/*', function(request, response, next) {
    if(docID !=='') {
       mongostash.getDocument('_id', docID, 'addresses', templateVars, returnDocument);
    }else{
-      returnDocument(templateVars);
+      returnDocument(null, templateVars);
    }
 });
 
@@ -84,6 +86,8 @@ app.post('/address', function(request, response, next) {
    mongostash.setDocument(request.body, id, 'addresses', function(err, ret) {
       conLog('upsert return: ' + JSON.stringify(ret));
       if(err){conLog(err);}
-      response.end(JSON.stringify(ret));
+      mongostash(__dirname + '/mu', dbURL, function () {
+         response.end(JSON.stringify(ret));
+      });
    });
 });
