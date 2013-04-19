@@ -1,6 +1,4 @@
-var consoleOutput = 0;
-
-var conLog = require('./conLog.js')(consoleOutput);
+var conLog = require('./conLog.js')(0); //1 to log to console
 
 conLog('\nstarting web.js');
 

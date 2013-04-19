@@ -11,7 +11,7 @@ var Db = mongo.Db;
 var fs = require('fs');
 var events = require('events');
 require('buffer-helpers');
-var conLog = require('./conLog.js')(1);
+var conLog = require('./conLog.js')(0);
 
 var loadCollections = function(templatesPath, dbOrURL, cb) {
    var templateCollections = {};
@@ -56,19 +56,19 @@ var loadCollections = function(templatesPath, dbOrURL, cb) {
    });
 
    fileProcessor.on('fileDone', function(name) {
-      console.log(name);
+      conLog(name);
       fileCount -= 1;
       if (fileCount === 0) {
-         console.log('-----------------------\n');
+         conLog('-----------------------\n');
          if (cb) {cb();}
       }
    });
 
    var processFiles = function(db) {
-      console.log('reading template directory ' + templatesPath + '\n');
+      conLog('reading template directory ' + templatesPath + '\n');
       fs.readdir(templatesPath, function(err, files) {
          if (err) {if (cb) {cb(err);} else {throw err;}}
-         console.log('---loading templates---');
+         conLog('---loading templates---');
          fileCount = files.length;
          files.forEach(function(key) {
             fileProcessor.populateCollectionObjects(key, db); //process each template file
