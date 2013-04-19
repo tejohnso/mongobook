@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
    <head>
-      <title>MongoBook demo</title>
+      <title>mongobook demo</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="bootstrap.min.css" rel="stylesheet" media="screen">
       <link href="mongobook.css" rel="stylesheet" media="screen">
@@ -10,7 +10,7 @@
          <div class="row-fluid">
             <div class="span12">
                <div class="page-header">
-                  <h1>MongoBook 
+                  <h1>mongobook 
                   <small>This is a basic demonstration using nodejs and mongo.</small></h1>
                </div>
                <div class="row-fluid">

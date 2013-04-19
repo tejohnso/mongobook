@@ -1,4 +1,7 @@
-BSBook
+mongobook
 ======
 
-Address book with bootstrap
+mongobook is an address book application primarily used as a means to evaluate
+bootstrap for layout and basic design components.  
+
+It is built using a node.js server running with express and mongodb for data storage.
