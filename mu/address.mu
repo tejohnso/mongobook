@@ -38,11 +38,13 @@
       </div>
       <div class='form-actions'>
          <input type='hidden' name='docID' value='{{_id}}'>
-         <button type='submit' class='btn' 
+         <button type='submit' class='btn btn-save btn-info' 
          data-toggle='modal' data-target='#saveModal'>Save</button>
+         <button type='submit' class='btn btn-delete btn-danger' 
+         data-toggle='modal' data-target='#saveModal'>Delete</button>
       </div>
       <div id='saveModal' class='modal hide fade' tabindex='-1' role='dialog'>
-         <div class='modal-body'><p>Saving document ...</p></div>
+         <div class='modal-body'><p>Updating document ...</p></div>
       </div>
    </div>
 </div>

@@ -47,7 +47,6 @@ app.get('/address/*', function(request, response, next) {
    //return json object containing data for selected address
    //or new address if request contains no target address to fetch
 
-   //request.body.tabID = Math.random().toString().substr(2); 
    conLog('get path is: ' + request.path);
    var docID = request.path.substr(9);
    conLog('fetching id: ' + docID);
@@ -73,6 +72,8 @@ app.get('/address/*', function(request, response, next) {
    if(docID !=='') {
       mongostash.getDocument('_id', docID, 'addresses', templateVars, returnDocument);
    }else{
+      templateVars.first = 'first';
+      templateVars.last = 'last';
       returnDocument(null, templateVars);
    }
 });
@@ -83,11 +84,21 @@ app.post('/address', function(request, response, next) {
    delete request.body.docID; //we don't need to save a duplicate of the _id field
    conLog('body is: ' + JSON.stringify(request.body));
    conLog('updating ID (blank means new doc): ' + id);
-   mongostash.setDocument(request.body, id, 'addresses', function(err, ret) {
+   mongostash.setDocument(request.body, id, 'addresses', false, function(err, ret) {
       conLog('upsert return: ' + JSON.stringify(ret));
       if(err){conLog(err);}
       mongostash(__dirname + '/mu', dbURL, function () {
          response.end(JSON.stringify(ret));
+      });
+   });
+});
+
+app.delete('/address', function(request, response, next) {
+   var id = request.body.docID;
+   mongostash.setDocument(request.body, id, 'addresses', true, function(err, ret) {
+      if(err){conLog(err);}
+      mongostash(__dirname + '/mu', dbURL, function () {
+         response.end('');
       });
    });
 });

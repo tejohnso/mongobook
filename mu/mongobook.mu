@@ -7,7 +7,6 @@
       <link href="mongobook.css" rel="stylesheet" media="screen">
    </head>
    <body>
-      <div class="container-fluid">
          <div class="row-fluid">
             <div class="span12">
                <div class="page-header">
@@ -51,9 +50,8 @@
                </div>
             </div>
          </div>
-      </div>
 
-      <script src="http://code.jquery.com/jquery.js"></script>
+      <script src="http://code.jquery.com/jquery-2.0.0.min.js"></script>
       <script src="bootstrap.min.js"></script>
       <script src="mongobook.js"></script>
    </body>

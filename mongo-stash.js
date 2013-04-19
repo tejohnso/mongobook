@@ -118,14 +118,15 @@ loadCollections.getDocument = function(searchElement, searchTarget, templateName
    }); 
 };
 
-loadCollections.setDocument = function(contents, target, collection, cb) {
+loadCollections.setDocument = function(contents, target, collection, rem, cb) {
+   rem = (rem === true) ? true : false;
    loadCollections.db.collection(collection, function(err, coll) {
       if (err) {cb(err); return;}
       if (target.length > 1) {
          target = mongo.BSONPure.ObjectID.createFromHexString(target);
       }
       coll.findAndModify({"_id": target}, {}, contents, 
-      {"upsert": true, "new": true}, function(err, res) {
+      {"upsert": true, "new": true, "remove": rem}, function(err, res) {
          if (err) {cb(err); return;}
          cb(null, res);
       });

@@ -4,41 +4,46 @@ $('.btn-primary').on('click', function(event) {
 });
 
 var appendNewAddressTab = function(docID) {
-   //fetch an address - or create a blank one 
+   //fetch an address - or create a blank one (we still go back to the server)
+   //we go back to the server to hit the template again - client side caching would be ++
    $.ajax({
       url: '/address/' + (docID || ''),
       type: 'GET',
       success: function(data) {
-         //data contains {title: (title tab html), address: (address form html)}
+         //data contains title html and address panel html
          data = data.replace(/[\n\r]/g, ' ');
          data = JSON.parse(data);
-         $('#addresses .tab-pane.active').removeClass('active');
          var newTab = $(data.address).prependTo('.tab-content');
          newTab.find('.icon-edit').closest('.btn').on('click', function(event) {
                $(this).prev().focus();
          });
-         newTab.find('.form-actions').find('button[type=submit]').on('click', saveAddress);
-         $('#tabs').prepend(data.title);
+         newTab.find('.form-actions').find('button.btn-save').on('click', updAddress);
+         newTab.find('.form-actions').find('button.btn-delete').on('click', delAddress);
+         $(data.title).prependTo('#tabs').find('a').click();
          newTab.find('input').first().focus();
       }});
 };
 
-var saveAddress = function(event){
+var updAddress = function(event, del){
    var button = event.target;
+   var type = 'POST';
+   if (del === true) {type = 'DELETE';}
    $.ajax({
       url: '/address',
-      type: 'POST',
+      type: type,
       data: $(button).closest('form').serialize(),
       success: function(data) {
-         $(button).siblings('input[name=docID]').val(JSON.parse(data)._id);
+         //$(button).siblings('input[name=docID]').val(JSON.parse(data)._id); //deprecated
          location.reload(true); //could be improved if the view was a separate template
       }
    });
-
-   //return false;  //stop event propagation - override default button submission action
 };
 
-$('.table-striped').on('click', 'tr', function(event) { //delegate even only to tr
+var delAddress = function(event) {
+   updAddress(event, true);
+};
+
+$('.table-striped').on('click', 'tr', function(event) { //delegate event only to tr
    appendNewAddressTab($(this).find('.hidden').html());
    return false;
 });
