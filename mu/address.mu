@@ -4,22 +4,22 @@
          <legend>Primary Information</legend>
          <label>first</label>
          <div class='input-append'>
-            <input type='text' name='first' value='{{first}}'>
+            <input class='input-medium' type='text' name='first' value='{{first}}'>
             <button class='btn' type='button'><i class='icon-edit'></i></button>
          </div>
          <label>last</label>
          <div class='input-append'>
-            <input type='text' name='last' value='{{last}}'>
+            <input class='input-medium' type='text' name='last' value='{{last}}'>
             <button class='btn' type='button'><i class='icon-edit'></i></button>
          </div>
          <label>email</label> 
          <div class='input-append'>
-            <input type='text' name='email' value='{{email}}'>
+            <input class='input-medium 'type='text' name='email' value='{{email}}'>
             <button class='btn' type='button'><i class='icon-edit'></i></button>
          </div>
          <label>cell</label> 
          <div class='input-append'>
-            <input type='text' name='cell' value='{{cell}}'>
+            <input class='input-medium' type='text' name='cell' value='{{cell}}'>
             <button class='btn' type='button'><i class='icon-edit'></i></button>
          </div>
       </fieldset>

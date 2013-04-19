@@ -11,14 +11,14 @@
             <div class="span12">
                <div class="page-header">
                   <h1>mongobook 
-                  <small>This is a basic demonstration using nodejs and mongo.</small></h1>
+                  <small>This is a basic demo using nodejs and mongodb.</small></h1>
                </div>
                <div class="row-fluid">
-                  <div class="span3"></div>
-                  <div class="span6">
-                     <div class="well text-center">
-                        <button class="btn btn-primary" type="button">Add Address</button>
-                        <table class="table table-striped table-hover">
+                  <div class="span2"></div>
+                  <div class="span8">
+                     <div class="well">
+                        <table class="table table-striped table-hover table-condensed">
+                           <caption>List of entries</caption>
                            <thead>
                               <tr>
                                  <th class="hidden"></th>
@@ -26,7 +26,7 @@
                                  <th>Last</th>
                               </tr>
                            </thead>
-                           <tbody>
+                           <tbody class="hover-pointer">
                               {{#addresses}}
                               <tr>
                                  <td class="hidden">{{_id}}</td>
@@ -36,6 +36,7 @@
                               {{/addresses}}
                            </tbody>
                         </table>
+                        <button class="btn btn-primary" type="button">New Entry</button>
                      </div>
                      <div id="addresses">
                         <ul class="nav nav-tabs" id="tabs">
@@ -44,7 +45,7 @@
                         </div>
                      </div>
                   </div>
-                  <div class="span3"></div>
+                  <div class="span2"></div>
                </div>
             </div>
          </div>
