@@ -19,7 +19,12 @@ var appendNewAddressTab = function(docID) {
          });
          newTab.find('.form-actions').find('button.btn-save').on('click', updAddress);
          newTab.find('.form-actions').find('button.btn-delete').on('click', delAddress);
-         $(data.title).prependTo('#tabs').find('a').click();
+         var newTabTitle = $(data.title).prependTo('#tabs');
+         newTabTitle.find('.icon-remove').click(function(event) {
+            $($(this).closest('a').attr('href')).remove();
+            $(this).closest('li').remove();
+         });
+         newTabTitle.find('a').click();
          newTab.find('input').first().focus();
       }});
 };
@@ -43,7 +48,9 @@ var delAddress = function(event) {
    updAddress(event, true);
 };
 
+//handler for clicking on table rows to select a document
 $('.table-striped').on('click', 'tr', function(event) { //delegate event only to tr
    appendNewAddressTab($(this).find('.hidden').html());
    return false;
 });
+

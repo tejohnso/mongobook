@@ -14,8 +14,8 @@
                   <small>This is a basic demonstration using nodejs and mongo.</small></h1>
                </div>
                <div class="row-fluid">
-                  <div class="span1"></div>
-                  <div class="span10">
+                  <div class="span3"></div>
+                  <div class="span6">
                      <div class="well text-center">
                         <button class="btn btn-primary" type="button">Add Address</button>
                         <table class="table table-striped table-hover">
@@ -24,7 +24,6 @@
                                  <th class="hidden"></th>
                                  <th>First</th>
                                  <th>Last</th>
-                                 <th>Email</th>
                               </tr>
                            </thead>
                            <tbody>
@@ -33,7 +32,6 @@
                                  <td class="hidden">{{_id}}</td>
                                  <td>{{first}}</td>
                                  <td>{{last}}</td>
-                                 <td>{{email}}</td>
                               </tr>
                               {{/addresses}}
                            </tbody>
@@ -46,9 +44,12 @@
                         </div>
                      </div>
                   </div>
-                  <div class="span1"></div>
+                  <div class="span3"></div>
                </div>
             </div>
+         </div>
+         <div id='saveModal' class='modal hide fade' tabindex='-1' role='dialog'>
+            <div class='modal-body'><p>Updating document ...</p></div>
          </div>
 
       <script src="http://code.jquery.com/jquery-2.0.0.min.js"></script>

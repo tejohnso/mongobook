@@ -1,4 +1,4 @@
-var consoleOutput = 1;
+var consoleOutput = 0;
 
 var conLog = require('./conLog.js')(consoleOutput);
 
