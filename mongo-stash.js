@@ -11,7 +11,7 @@ var Db = mongo.Db;
 var fs = require('fs');
 var events = require('events');
 require('buffer-helpers');
-var conLog = require('./conLog.js')(0);
+var conLog = require('./conLog.js')(1);
 
 var loadCollections = function(templatesPath, dbOrURL, cb) {
    var templateCollections = {};
@@ -96,41 +96,40 @@ var loadCollections = function(templatesPath, dbOrURL, cb) {
    return loadCollections;
 };
 
-loadCollections.getDocument = function(searchElement, searchTarget, templateName, templateVars, cb) {
-   //This function will retrieve a collection of data for a particular document
-   loadCollections.db.collection(templateName, function(err, coll) {
+loadCollections.documentAction = function(searchElement, searchValue, collection, templateVars, action, cb) {
+   loadCollections.db.collection(collection, function(err, coll) {
       if (err) {cb(err);return;}
       var searchObject = {}, searchObjectText = {}, searchObjectNum = {};
       if (searchElement === "_id") {
-         searchObject._id = mongo.BSONPure.ObjectID.createFromHexString(searchTarget);
+         searchObject._id = mongo.BSONPure.ObjectID.createFromHexString(searchValue);
       } else {
-         searchObjectText[searchElement] = searchTarget.toString();
-         searchObjectNum[searchElement] = parseInt(searchTarget, 10);
+         searchObjectText[searchElement] = searchValue.toString();
+         searchObjectNum[searchElement] = parseInt(searchValue, 10);
          searchObject = {$or: [searchObjectText, searchObjectNum]};
       }
-      coll.findOne(searchObject, function(err, doc) {
-         var key;
-         if (err) {cb(err);return;}
-         if (doc === null) {cb(templateVars); return;} 
-         for (key in doc) {if (doc.hasOwnProperty(key)) {templateVars[key] = doc[key];}}
-         cb(null, templateVars);
-      });
-   }); 
-};
-
-loadCollections.setDocument = function(contents, target, collection, rem, cb) {
-   rem = (rem === true) ? true : false;
-   loadCollections.db.collection(collection, function(err, coll) {
-      if (err) {cb(err); return;}
-      if (target.length > 1) {
-         target = mongo.BSONPure.ObjectID.createFromHexString(target);
+      switch (action) {
+         case 'GET':
+            coll.findOne(searchObject, function(err, doc) {
+               var key;
+               if (err) {cb(err);return;}
+               if (doc === null) {cb(templateVars); return;} 
+               for (key in doc) {
+                  if (doc.hasOwnProperty(key)) {templateVars[key] = doc[key];}
+               }
+               cb(null, templateVars);
+            });
+         break;
+         case 'POST':
+         case 'DELETE':
+            var del = (action === 'DELETE' ? true : false);
+            coll.findAndModify(searchObject, {}, contents, 
+            {"upsert": true, "new": true, "remove": del}, function(err, res) {
+               if (err) {cb(err); return;}
+               cb(null, res);
+            });
+         break;
       }
-      coll.findAndModify({"_id": target}, {}, contents, 
-      {"upsert": true, "new": true, "remove": rem}, function(err, res) {
-         if (err) {cb(err); return;}
-         cb(null, res);
-      });
-   });
+   }); 
 };
 
 loadCollections.getCollectionFields = function(searchField, collection, cb) {

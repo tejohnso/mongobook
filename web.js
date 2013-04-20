@@ -1,7 +1,6 @@
-var conLog = require('./conLog.js')(0); //1 to log to console
+var conLog = require('./conLog.js')(1); //1 to log to console
 
 conLog('\nstarting web.js');
-
 var express = require('express');
 var mu = require('mu2');
 var port = process.env.PORT || 3000;
@@ -30,18 +29,35 @@ app.get('/img/*', function(request, response, next) {
 });
 
 app.get('/', function(request, response, next) { 
-   conLog('Serving path: ' + request.path);
-   var templateVars = mongostash.templateCollections.mongobook;
-   conLog(templateVars);
-   //mu.compileAndRender('mu/mongobook.mu', templateVars).pipe(response);
-   mu.compileAndRender('mu/mongobook.mu', templateVars).on('data', function(data) {
-      response.write(data);      
-   }).on('end', function() {
-      response.end();
-   });
+   response.redirect('mongobook.html');
 });
 
-app.get('/address/*', function(request, response, next) {
+app.all('*', function(request, response, next) {
+   conLog('processing path: ' + request.path);
+   var pathPieces = request.path.split('/');
+   if (pathPieces.length !== 3) {
+      conLog('bad path - redirecting');
+      response.redirect('/');
+      return;
+   }
+   var doc = pathPieces.pop();
+   conLog('processing document: ' + doc);
+   if (doc.length !== 12 && doc.length !== 24) {
+      conLog('bad document id - redirecting');
+      response.redirect('/');
+      return;
+   }
+   var coll = pathPieces.pop();
+   conLog('processing collection: ' + coll);
+   var callBack = function(err, doc) {
+      if (err) {conLog(err); response.end();}
+      conLog('returning: ' + JSON.stringify(doc));
+      response.write(JSON.stringify(doc));   
+   };
+   mongostash.documentAction('_id', doc, coll, request.body, request.method, callBack);
+});
+/*
+app.get('/address/ *, function(request, response, next) {
    //return json object containing data for selected address
    //or new address if request contains no target address to fetch
 
@@ -100,3 +116,4 @@ app.delete('/address', function(request, response, next) {
       });
    });
 });
+*/
