@@ -1,125 +1,72 @@
-//look at every *.mu file in the mustache directory
-//for each hash block in each file, try to find a database collection with that hash block name
-//store the documents for the collection 
-//templateCollections = {"template1": { "sectionA": ["xxx","yyy","zzz"],
-//                                      "sectionB": ["xx", "xxx", "xxx"]},
-//                       "template2": { "sectionA": ["xxx', "xxx", "xxx"]}}
-//This way all template variables are stored in an object and they can be used by compileAndRender
-
 var mongo = require('mongodb');
 var Db = mongo.Db;
-var fs = require('fs');
-var events = require('events');
-require('buffer-helpers');
 var conLog = require('./conLog.js')(1);
 
-var loadCollections = function(templatesPath, dbOrURL, cb) {
-   var templateCollections = {};
-   var fetchCount = {};
-   var fileCount = 0;
-
-   var fileProcessor = new events.EventEmitter();
-   fileProcessor.populateCollectionObjects = function(fileName, db) {
-      var templateName = fileName.split('.')[0];
-      templateCollections[templateName] = {};
-      fs.readFile(templatesPath + '/' + fileName, function(err, data) {
-         if (err) {if (cb) {cb(err);} else {throw err;}}
-         data = data.extractSubsets('{{#', '}}');
-         if (data.length === 0) {fileProcessor.emit('fileDone', templateName);return;}
-         fetchCount[templateName] = data.length;
-         data.forEach(function(key) {
-            collectionGetter.getCollectionData(templateName, key.toString(), db); //get each collection
-         });
-      });
-   };
-
-   var collectionGetter = new events.EventEmitter();
-   collectionGetter.getCollectionData = function(template, colName, db) {
-      db.collection(colName, function(err, coll) {
-         if (err) {if (cb) {cb(err);} else {throw err;}}
-         coll.find(function(err, curs) {
-            if (err) {if (cb) {cb(err);} else {throw err;}}
-            curs.toArray(function(err, docs) {
-               if (err) {if (cb) {cb(err);} else {throw err;}}
-               templateCollections[template][colName] = docs;
-               collectionGetter.emit('collDone', template);
-            });
-         });
-      }); 
-   };
-
-   collectionGetter.on('collDone', function(templateDone) {
-      fetchCount[templateDone] -= 1;
-      if (fetchCount[templateDone] === 0) {
-         fileProcessor.emit('fileDone', templateDone);
-      }
-   });
-
-   fileProcessor.on('fileDone', function(name) {
-      conLog(name);
-      fileCount -= 1;
-      if (fileCount === 0) {
-         conLog('-----------------------\n');
-         if (cb) {cb();}
-      }
-   });
-
-   var processFiles = function(db) {
-      conLog('reading template directory ' + templatesPath + '\n');
-      fs.readdir(templatesPath, function(err, files) {
-         if (err) {if (cb) {cb(err);} else {throw err;}}
-         conLog('---loading templates---');
-         fileCount = files.length;
-         files.forEach(function(key) {
-            fileProcessor.populateCollectionObjects(key, db); //process each template file
-         });
-      });
-   };
-   
+var mongostash = function(dbOrURL, cb) {
    if (typeof dbOrURL === 'string') {
       conLog('creating connection for template load');
       Db.connect(dbOrURL, function(err, db) {
          if (err) {if (cb) {cb(err);} else {throw err;}}
-         loadCollections.db = db;
-         processFiles(db);
+         mongostash.db = db;
+         //processFiles(db);
+         if (cb) {cb();}
       });
    } else {
       if (!(dbOrURL instanceof Db)) {
          cb("mongo-stash: Expecting a mongo database or a url to a mongo database.");
          return;
       }
-      loadCollections.db = dbOrURL;
-      processFiles(dbOrURL);
+      mongostash.db = dbOrURL;
+      if (cb) {cb();}
    }
 
-   loadCollections.templateCollections = templateCollections;
-   return loadCollections;
+   return mongostash;
 };
 
-loadCollections.documentAction = function(searchElement, searchValue, collection, templateVars, action, cb) {
-   loadCollections.db.collection(collection, function(err, coll) {
+/*mongostash will have an element for each template that contains elements for each
+previous search query on that template.  returnDocs is an object that contains an 
+element for the query that contains an array of all the results for that query.  
+Queries from the browser can pass in a default array of results set but the object 
+should be 
+structured as expected (i.e. {"querypath": [{array of doc objects}]}) */
+mongostash.documentAction = function(query, returnDocs, action, cb) {
+   var splitPath = query.split('/');
+   returnDocs = returnDocs || {};
+   if (!returnDocs.hasOwnProperty(query)) {returnDocs[query] = [];}
+   mongostash.db.collection(splitPath[1], function(err, coll) {
       if (err) {cb(err);return;}
       var searchObject = {}, searchObjectText = {}, searchObjectNum = {};
-      if (searchElement === "_id") {
-         searchObject._id = mongo.BSONPure.ObjectID.createFromHexString(searchValue);
+      if (splitPath[2] === "_id" && splitPath[3] !== '$all') {
+         searchObject._id = mongo.BSONPure.ObjectID.createFromHexString(splitPath[3]);
+      } else if (splitPath[3] === '$all') {
+         searchObject[splitPath[2]] = {$exists: true};
       } else {
-         searchObjectText[searchElement] = searchValue.toString();
-         searchObjectNum[searchElement] = parseInt(searchValue, 10);
-         searchObject = {$or: [searchObjectText, searchObjectNum]};
+         searchObjectText[splitPath[2]] = splitPath[3].toString();
+         searchObjectNum[splitPath[2]] = parseInt(splitPath[3], 10);
+         searchObject = {"$or": [searchObjectText, searchObjectNum]};
       }
       switch (action) {
          case 'GET':
-            coll.findOne(searchObject, function(err, doc) {
-               var key;
-               if (err) {cb(err);return;}
-               if (doc === null) {cb(templateVars); return;} 
-               for (key in doc) {
-                  if (doc.hasOwnProperty(key)) {templateVars[key] = doc[key];}
-               }
-               cb(null, templateVars);
-            });
+            conLog('GETting ' + query);
+            if (mongostash.hasOwnProperty(query)) {
+               conLog('fetching docs for ' + query + ' from server cache');
+               returnDocs[query] = returnDocs[query].concat(mongostash[query]);
+               cb(null, returnDocs);
+            } else {
+               coll.find(searchObject, function(err, curs) {
+                  conLog('querying ' + query);
+                  if (err) {if (cb) {cb(err);} else {throw err;}}
+                  curs.toArray(function(err, docs) {
+                     if (err) {if (cb) {cb(err);} else {throw err;}}
+                     if (docs === null) {cb(null, returnDocs || {}); return;} 
+                     mongostash[query] = docs;
+                     returnDocs[query] = returnDocs[query].concat(docs);
+                     cb(null, returnDocs);
+                  });
+               });
+            }
          break;
-         case 'POST':
+         case 'POST':  //these will need to update returnDocs[path]
          case 'DELETE':
             var del = (action === 'DELETE' ? true : false);
             coll.findAndModify(searchObject, {}, contents, 
@@ -132,10 +79,10 @@ loadCollections.documentAction = function(searchElement, searchValue, collection
    }); 
 };
 
-loadCollections.getCollectionFields = function(searchField, collection, cb) {
+mongostash.getCollectionFields = function(searchField, collection, cb) {
    //For a particular collection, look in every document and return the value of a particular field. 
    //For example return all ocurring customerNums in a Customers collection
-   loadCollections.db.collection(collection, function(err, coll) {
+   mongostash.db.collection(collection, function(err, coll) {
       if (err) {throw err;}
       var fld = {}; fld[searchField] = 1;
       coll.find({}, fld).toArray(function(err, docs) {
@@ -150,5 +97,5 @@ loadCollections.getCollectionFields = function(searchField, collection, cb) {
    });
 };
 
-module.exports = loadCollections;
+module.exports = mongostash;
 

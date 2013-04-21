@@ -54,3 +54,37 @@ $('.table-striped').on('click', 'tr', function(event) { //delegate event only to
    return false;
 });
 
+
+
+
+var mongobook = {};
+mongobook.templateList = ['addresses', 'address', 'addressTabTitle'];
+
+//mongobook[models][path] gives the model collection for that path.  
+//path can be a /template/searchField/searchTarget for one item or
+//path can be /template/_id/$all to get all the models for that collection
+mongobook.loadTemplates = function() {
+   mongobook.templates = {};
+   mongobook.views = {};
+   $.each(mongobook.templateList, function(idx, val) {
+      $.get(val + '.mu', function(data) {
+         mongobook.templates[val] = Mustache.compile(data);
+      });
+   });
+};
+
+mongobook.renderView = function(path, insertInto) {
+   if (mongobook.views[path] === undefined) {
+      $.get(path, function(data) {
+         mongobook.views[path] = mongobook.templates[path.split('/')[1]](JSON.parse(data)).trim();
+         $(mongobook.views[path]).prependTo(insertInto);
+      });
+   } else {
+      $(mongobook.views[path]).prependTo(insertInto);
+   }
+};
+
+$(document).ready(function() {
+   mongobook.loadTemplates();
+   mongobook.renderView('/addresses/_id/$all', '.table-striped tbody');
+});
