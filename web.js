@@ -2,7 +2,6 @@ var conLog = require('./conLog.js')(1); //1 to log to console
 
 conLog('\nstarting web.js');
 var express = require('express');
-var mu = require('mu2');
 var port = process.env.PORT || 3000;
 var app = express();
 

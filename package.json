@@ -1,10 +1,9 @@
 {
-  "name": "bsbook",
-  "version": "0.0.1",
+  "name": "mongobook",
+  "version": "0.0.3",
   "dependencies": {
     "mongodb": "1.x",
-    "express": "x",
-    "buffer-helpers": "x"
+    "express": "x"
   },
   "engines": {
     "node": "x",
