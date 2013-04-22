@@ -4,22 +4,30 @@ mongobook.appendNewAddress = function(docID) {
    //create the new address panel then create the tab for it - then click the tab
    //also create the row in the address list - no view caches are updated until SAVE
 
-   var templates = ['/address/', '/addressTabTitle/', '/addresses/']; 
-   var templateContainers = ['#addressPanes', '#tabs', '#rows'];
-   var callbacks = [null, newTabCallback, null];
+   var templatePaths;
+   var templates = ['/address/', '/addressTabTitle/'];
+   var templateContainers = ['#addressPanes', '#tabs'];
    var path = '_id/' + docID;
-   if (docID === '') {
-      docID = Math.random().toString().substr(2, 18);
-      path = '{"first":"first","last":"last","_id":"' + docID + '"}';
-   }
-
    var newTabCallback = function(newTab) {
       newTab.find('a').click();
       $(newTab.find('a').attr('href')).find('input').first().focus();
    };
+   var callbacks = [null, newTabCallback];
+   if (docID === '') {
+
+      //for a new BLANK address, we need to add a new row and set the _id
+      docID = Math.random().toString().substr(2, 18);
+      path = '{"first":"first","last":"last","_id":"' + docID + '"}';
+      templates.push('/addresses/');
+      templateContainers.push('#rows');
+      callbacks.push(null);
+   }
+   templatePaths = [path, path, '{"addresses": [' + path + ']}'];
 
    $.each(templates, function(idx, template) {
-      controller.renderView(template + path, templateContainers[idx], callbacks[idx]);
+      controller.renderView(template + templatePaths[idx], 
+                            templateContainers[idx],
+                            callbacks[idx]);
    });
 };
 
@@ -79,7 +87,7 @@ $(document).ready(function() {
       });
    
       //handler for clicking on table rows to select a document
-      $('.table-striped').on('click', 'tr', function(event) { //delegate event only to tr
+      $('#rows').on('click', 'tr', function(event) { //delegate event only to tr
          mongobook.appendNewAddress($(this).find('.hidden').html());
          return false;
       });
@@ -103,7 +111,11 @@ $(document).ready(function() {
 
    //click handler for new tabs
    $('#tabs').on('click', 'i', function(event) {
-      $($(this).closest('a').attr('href')).remove(); //remove address details
+      var id = $(this).closest('a').attr('href').substr(1);
+      if (id.length < 24) {                          //remove table row for unsaved closes
+         $('#rows').find('td.hidden:contains(' + id + ')').closest('tr').remove();
+      }
+      $('#' + id).remove();                                //remove address details
       $(this).closest('li').remove();                //remove tab
       return false;
    });   
