@@ -8,7 +8,6 @@ var mongostash = function(dbOrURL, cb) {
       Db.connect(dbOrURL, function(err, db) {
          if (err) {if (cb) {cb(err);} else {throw err;}}
          mongostash.db = db;
-         //processFiles(db);
          if (cb) {cb();}
       });
    } else {
@@ -23,16 +22,8 @@ var mongostash = function(dbOrURL, cb) {
    return mongostash;
 };
 
-/*mongostash will have an element for each template that contains elements for each
-previous search query on that template.  returnDocs is an object that contains an 
-element for the query that contains an array of all the results for that query.  
-Queries from the browser can pass in a default array of results set but the object 
-should be 
-structured as expected (i.e. {"querypath": [{array of doc objects}]}) */
-mongostash.documentAction = function(query, returnDocs, action, cb) {
+mongostash.documentAction = function(query, clientDoc, action, cb) {
    var splitPath = query.split('/');
-   returnDocs = returnDocs || {};
-   if (!returnDocs.hasOwnProperty(query)) {returnDocs[query] = [];}
    mongostash.db.collection(splitPath[1], function(err, coll) {
       if (err) {cb(err);return;}
       var searchObject = {}, searchObjectText = {}, searchObjectNum = {};
@@ -49,29 +40,36 @@ mongostash.documentAction = function(query, returnDocs, action, cb) {
          case 'GET':
             conLog('GETting ' + query);
             if (mongostash.hasOwnProperty(query)) {
-               conLog('fetching docs for ' + query + ' from server cache');
-               returnDocs[query] = returnDocs[query].concat(mongostash[query]);
-               cb(null, returnDocs);
+               conLog('CACHE fetch for ' + query);
+               cb(null, mongostash[query]);
             } else {
                coll.find(searchObject, function(err, curs) {
-                  conLog('querying ' + query);
                   if (err) {if (cb) {cb(err);} else {throw err;}}
                   curs.toArray(function(err, docs) {
                      if (err) {if (cb) {cb(err);} else {throw err;}}
                      if (docs === null) {cb(null, returnDocs || {}); return;} 
-                     mongostash[query] = docs;
-                     returnDocs[query] = returnDocs[query].concat(docs);
-                     cb(null, returnDocs);
+                     if (docs.length > 1) {
+                        var ret = {};
+                        ret[splitPath[1]] = docs;
+                        mongostash[query] = ret;
+                     } else {
+                        mongostash[query] = docs[0];
+                     }
+                     cb(null, mongostash[query]);
                   });
                });
             }
          break;
-         case 'POST':  //these will need to update returnDocs[path]
+         case 'POST':  //these will need to update mongostash[query]
          case 'DELETE':
+            conLog('updating record' + JSON.stringify(searchObject) + ' with ' + 
+               JSON.stringify(clientDoc));
             var del = (action === 'DELETE' ? true : false);
-            coll.findAndModify(searchObject, {}, contents, 
+            coll.findAndModify(searchObject, {}, clientDoc, 
             {"upsert": true, "new": true, "remove": del}, function(err, res) {
                if (err) {cb(err); return;}
+               mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/$all'][splitPath[1]].push(res);
+               mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + res[splitPath[3]]] = res;
                cb(null, res);
             });
          break;

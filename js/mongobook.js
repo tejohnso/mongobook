@@ -1,90 +1,110 @@
-$('.btn-primary').on('click', function(event) {
-   appendNewAddressTab();
-   return false; //stop propagation
-});
-
-var appendNewAddressTab = function(docID) {
-   //fetch an address - or create a blank one (we still go back to the server)
-   //we go back to the server to hit the template again - client side caching would be ++
-   $.ajax({
-      url: '/address/' + (docID || ''),
-      type: 'GET',
-      success: function(data) {
-         //data contains title html and address panel html
-         data = data.replace(/[\n\r]/g, ' ');
-         data = JSON.parse(data);
-         var newTab = $(data.address).prependTo('.tab-content');
-         newTab.find('.icon-edit').closest('.btn').on('click', function(event) {
-               $(this).prev().focus();
-         });
-         newTab.find('.form-actions').find('button.btn-save').on('click', updAddress);
-         newTab.find('.form-actions').find('button.btn-delete').on('click', delAddress);
-         var newTabTitle = $(data.title).prependTo('#tabs');
-         newTabTitle.find('.icon-remove').click(function(event) {
-            $($(this).closest('a').attr('href')).remove();
-            $(this).closest('li').remove();
-         });
-         newTabTitle.find('a').click();
-         newTab.find('input').first().focus();
-      }});
-};
-
-var updAddress = function(event, del){
-   var button = event.target;
-   var type = 'POST';
-   if (del === true) {type = 'DELETE';}
-   $.ajax({
-      url: '/address',
-      type: type,
-      data: $(button).closest('form').serialize(),
-      success: function(data) {
-         //$(button).siblings('input[name=docID]').val(JSON.parse(data)._id); //deprecated
-         location.reload(true); //could be improved if the view was a separate template
-      }
-   });
-};
-
-var delAddress = function(event) {
-   updAddress(event, true);
-};
-
-//handler for clicking on table rows to select a document
-$('.table-striped').on('click', 'tr', function(event) { //delegate event only to tr
-   appendNewAddressTab($(this).find('.hidden').html());
-   return false;
-});
-
-
-
-
 var mongobook = {};
-mongobook.templateList = ['addresses', 'address', 'addressTabTitle'];
 
-//mongobook[models][path] gives the model collection for that path.  
-//path can be a /template/searchField/searchTarget for one item or
-//path can be /template/_id/$all to get all the models for that collection
-mongobook.loadTemplates = function() {
-   mongobook.templates = {};
-   mongobook.views = {};
-   $.each(mongobook.templateList, function(idx, val) {
-      $.get(val + '.mu', function(data) {
-         mongobook.templates[val] = Mustache.compile(data);
-      });
+mongobook.appendNewAddress = function(docID) {
+   //create the new address panel then create the tab for it - then click the tab
+   //also create the row in the address list - no view caches are updated until SAVE
+
+   var templates = ['/address/', '/addressTabTitle/', '/addresses/']; 
+   var templateContainers = ['#addressPanes', '#tabs', '#rows'];
+   var callbacks = [null, newTabCallback, null];
+   var path = '_id/' + docID;
+   if (docID === '') {
+      docID = Math.random().toString().substr(2, 18);
+      path = '{"first":"first","last":"last","_id":"' + docID + '"}';
+   }
+
+   var newTabCallback = function(newTab) {
+      newTab.find('a').click();
+      $(newTab.find('a').attr('href')).find('input').first().focus();
+   };
+
+   $.each(templates, function(idx, template) {
+      controller.renderView(template + path, templateContainers[idx], callbacks[idx]);
    });
 };
 
-mongobook.renderView = function(path, insertInto) {
-   if (mongobook.views[path] === undefined) {
-      $.get(path, function(data) {
-         mongobook.views[path] = mongobook.templates[path.split('/')[1]](JSON.parse(data)).trim();
-         $(mongobook.views[path]).prependTo(insertInto);
-      });
-   } else {
-      $(mongobook.views[path]).prependTo(insertInto);
-   }
+mongobook.delAddress = function(event) {
+   var button = $(event.target);
+   var id = button.parent().find('input[name=_id]').val();
+   $('#addresses .nav-tabs').find('a[href=#' + id + ']').closest('li').remove();
+   $('#' + id).remove();
+   $('.table-striped').find('tbody').
+      find('td.hidden:contains(' + id + ')').closest('tr').remove();
+   delete mongobook.views['/addresses/_id/$all'];
+   delete mongobook.views['/addresses/_id/' + id];
+   $.ajax({
+      url: '/addresses/_id/' + id,
+      type: 'DELETE'
+   });
+   return false;
+};
+
+mongobook.saveAddress = function(event, del){
+   var button = $(event.target);
+   var type = (del === true) ? 'DELETE' : 'POST';
+   var newAddressData = urlQueryToObject(button.closest('form').serialize());
+   var id = newAddressData._id;
+   delete newAddressData._id; //never try to update an id in an existing document
+   mongobook.updateView('/addresses/_id/' + id, newAddressData);
+   $('.table-striped').find('td.hidden:contents(' + id + ')').parent().find('td').last().html('<img src="ajax-loader.gif" />'); //add the spinner
+   
+   controller.renderView('/addresses/_id/' + id, '.table-striped tbody', updateAddress);
+
+   var updateRow = function(newRow) {
+      newRow.find('.hidden').html('#' + newID); //update the id in the address list row
+      button.closest('input[name=_id]').val(newID); //update the id in the save button
+      $(tabID).attr('id', '#' + newID); //update the id in the tab contents 
+      $('#tabs').find('a[href=' + tabID + ']').attr('href', '#' + newID); //update the id in the tab link
+      newRow.find('td').last().html(''); //remove the loading gif
+   };
+   controller.updateView('/address/_id/' + id, '.tab-content', updateRow);
+   return false;
+};
+
+mongobook.urlQueryToObject = function(query) {
+   //maybe we can get rid of this if we always pass in a JSON-valid path to renderView
+   var obj = {};
+   $.each(query.split('&'), function(idx, val) {
+      obj[val.split('=')[0]] = val.split('=')[1];
+   });
+   return obj;
 };
 
 $(document).ready(function() {
-   mongobook.loadTemplates();
-   mongobook.renderView('/addresses/_id/$all', '.table-striped tbody');
+   controller.loadTemplates(["address", "addresses", "addressTabTitle"]);
+   controller.renderView('/addresses/_id/$all', '.table-striped tbody', function(view) {
+      $('.btn-primary').on('click', function(event) {
+         mongobook.appendNewAddress('');
+         return false; 
+      });
+   
+      //handler for clicking on table rows to select a document
+      $('.table-striped').on('click', 'tr', function(event) { //delegate event only to tr
+         mongobook.appendNewAddress($(this).find('.hidden').html());
+         return false;
+      });
+   });
+
+   //click handlers for new address panes
+   $('#addresses').on('click', 'button', function(event) {
+      if ($(this).attr('class').indexOf('btn-edit') > -1) {
+         $(this).prev().focus();
+         return false;
+      }
+      if ($(this).attr('class').indexOf('btn-save') > -1) {
+         mongobook.saveAddress(event);
+         return false;
+      }
+      if ($(this).attr('class').indexOf('btn-delete') > -1) {
+         mongobook.delAddress(event);
+         return false;
+      }
+   });
+
+   //click handler for new tabs
+   $('#tabs').on('click', 'i', function(event) {
+      $($(this).closest('a').attr('href')).remove(); //remove address details
+      $(this).closest('li').remove();                //remove tab
+      return false;
+   });   
 });

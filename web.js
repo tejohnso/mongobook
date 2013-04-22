@@ -6,7 +6,7 @@ var port = process.env.PORT || 3000;
 var app = express();
 
 var startListening = function(err) {
-   if(err) {throw err;}
+   if(err) {conLog(err); process.exit();}
    app.listen(port, function() {
       console.log("Listening on port " + port);
    });
@@ -33,12 +33,7 @@ app.get('/', function(request, response, next) {
 
 app.all('*', function(request, response, next) {
    var splitPath = request.path.split('/');  //path is /[template]/[field]/[target]
-   conLog('processing path: ' + request.path);
-   if (splitPath.length !== 4) {
-      conLog('bad path - redirecting');
-      response.redirect('/');
-      return;
-   }
+   conLog('\n' + request.method + ' processing path: ' + request.path);
    conLog('processing collection: ' + splitPath[1]);
    conLog('searching field: ' + splitPath[2]);
    conLog('processing target: ' + splitPath[3]);

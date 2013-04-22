@@ -1,6 +1,6 @@
 <li>
-   <a data-toggle='tab' href='#{{tabID}}'>
-      {{first}} {{last}}  
-      <i class='icon-remove hover-pointer'></i>
+   <a data-toggle='tab' href='#{{_id}}'>
+      {{first}} {{last}}
+      <i class='icon-remove-circle hover-pointer'></i> 
    </a>
 </li>
