@@ -1,4 +1,10 @@
 var mongobook = {};
+//ALL POSSIBLE PATHS SHOULD BE IN AN OBJECT
+//THAT WAY WHEN WE NEED TO UPDATE THE CACHE WE CAN ITERATE THE OBJECT ELEMENTS MATCHING
+//OUR CURRENT PATH - ACTUALLY WE SHOULD ITERATE THE UNIQUE TEMPLATEDATASOURCES
+mongobook.templateDataSourceCollections = {"addresses": "addresses",
+                                           "address": "addresses",
+                                           "addressTabTitle": "addresses"};
 
 mongobook.appendNewAddress = function(docID) {
    //create the new address panel then create the tab for it - then click the tab
@@ -32,14 +38,15 @@ mongobook.appendNewAddress = function(docID) {
 };
 
 mongobook.delAddress = function(event) {
+   
+   //remove 3 elements - clear caches (2 local, 2 remote)
    var button = $(event.target);
    var id = button.parent().find('input[name=_id]').val();
-   $('#addresses .nav-tabs').find('a[href=#' + id + ']').closest('li').remove();
+   $('#tabs').find('a[href=#' + id + ']').closest('li').remove();
    $('#' + id).remove();
-   $('.table-striped').find('tbody').
-      find('td.hidden:contains(' + id + ')').closest('tr').remove();
-   delete mongobook.views['/addresses/_id/$all'];
-   delete mongobook.views['/addresses/_id/' + id];
+   $('#rows').find('td.hidden:contains(' + id + ')').closest('tr').remove();
+   delete controller.views['/addresses/_id/$all'];
+   delete controller.views['/addresses/_id/' + id];
    $.ajax({
       url: '/addresses/_id/' + id,
       type: 'DELETE'
@@ -50,22 +57,34 @@ mongobook.delAddress = function(event) {
 mongobook.saveAddress = function(event, del){
    var button = $(event.target);
    var type = (del === true) ? 'DELETE' : 'POST';
-   var newAddressData = urlQueryToObject(button.closest('form').serialize());
-   var id = newAddressData._id;
+   var newAddressData = mongobook.urlQueryToObject(button.closest('form').serialize());
+   var oldID = newAddressData._id;
+   var updatePaths = ['/address/_id/' + oldID,
+                     '/addressTabTitle/_id/' + oldID,
+                     'addresses/_id/' + oldID]; 
    delete newAddressData._id; //never try to update an id in an existing document
-   mongobook.updateView('/addresses/_id/' + id, newAddressData);
-   $('.table-striped').find('td.hidden:contents(' + id + ')').parent().find('td').last().html('<img src="ajax-loader.gif" />'); //add the spinner
-   
-   controller.renderView('/addresses/_id/' + id, '.table-striped tbody', updateAddress);
+   $('#rows').find('td.hidden:contains(' + oldID + ')').parent()
+   .find('td').last().html('<img src="ajax-loader.gif" />'); //add the spinner
 
-   var updateRow = function(newRow) {
-      newRow.find('.hidden').html('#' + newID); //update the id in the address list row
-      button.closest('input[name=_id]').val(newID); //update the id in the save button
-      $(tabID).attr('id', '#' + newID); //update the id in the tab contents 
-      $('#tabs').find('a[href=' + tabID + ']').attr('href', '#' + newID); //update the id in the tab link
-      newRow.find('td').last().html(''); //remove the loading gif
+   var uiConfirm = function(oldID) { //build the return function dynamically to keep oldID
+      return function(returnedDoc) {
+      //update the UI - Instead of all this manual hunting and pecking,
+      //we should bind elements to specific UI events (eg: 'updatedID') and each
+      //one of them can automagically do something when that even is seen.  
+      //So I guess templates should be associated with a group of elements, 
+      //which have their bindings attached at template load time with $().on()
+         $('#rows').find('td.hidden:contents(' + oldID + ')').parent()
+         .find('td').find('.hidden').html(returnedDoc._id); //update the id in the list row
+         button.closest('input[name=_id]').val(id); //update the id in the save button
+         $(tabID).attr('id', '#' + id); //update the id in the tab contents 
+         $('#tabs').find('a[href=' + tabID + ']').attr('href', '#' + id); //tab link
+         newRow.find('td').last().html(''); //remove the loading gif
+      };
    };
-   controller.updateView('/address/_id/' + id, '.tab-content', updateRow);
+   
+   //update all the appropriate local view caches.  After the first one completes
+   //we will indicate success on the ui since these all have the same data source.
+   controller.updateViews(updatePaths, newAddressData, [uiConfirm(oldID), null, null]);
    return false;
 };
 
@@ -73,7 +92,7 @@ mongobook.urlQueryToObject = function(query) {
    //maybe we can get rid of this if we always pass in a JSON-valid path to renderView
    var obj = {};
    $.each(query.split('&'), function(idx, val) {
-      obj[val.split('=')[0]] = val.split('=')[1];
+      obj[decodeURIComponent(val.split('=')[0])] = decodeURIComponent(val.split('=')[1]);
    });
    return obj;
 };

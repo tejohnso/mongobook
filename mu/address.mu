@@ -5,22 +5,22 @@
          <label>first</label>
          <div class='input-append'>
             <input class='input-medium' type='text' name='first' value='{{first}}'>
-            <button class='btn btn-edit' type='button'><i class='icon-edit'></i></button>
+            <button class='btn btn-edit' type='button' tabindex='-1'><i class='icon-edit'></i></button>
          </div>
          <label>last</label>
          <div class='input-append'>
             <input class='input-medium' type='text' name='last' value='{{last}}'>
-            <button class='btn btn-edit' type='button'><i class='icon-edit'></i></button>
+            <button class='btn btn-edit' type='button' tabindex='-1'><i class='icon-edit'></i></button>
          </div>
          <label>email</label> 
          <div class='input-append'>
             <input class='input-medium 'type='text' name='email' value='{{email}}'>
-            <button class='btn btn-edit' type='button'><i class='icon-edit'></i></button>
+            <button class='btn btn-edit' type='button' tabindex='-1'><i class='icon-edit'></i></button>
          </div>
          <label>cell</label> 
          <div class='input-append'>
             <input class='input-medium' type='text' name='cell' value='{{cell}}'>
-            <button class='btn btn-edit' type='button'><i class='icon-edit'></i></button>
+            <button class='btn btn-edit' type='button' tabindex='-1'><i class='icon-edit'></i></button>
          </div>
       </fieldset>
       <div class='form-actions'>
