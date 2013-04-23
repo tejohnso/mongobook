@@ -100,12 +100,16 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
                var returnColl = {};
                returnColl[splitPath[1]] = [];
                returnColl[splitPath[1]].push(res);
-               if (mongostash[allPath] === undefined) { 
-                  mongostash[allPath] = {};
-                  mongostash[allPath][splitPath[1]] = [];
-               }
-               conLog('adding record to cache for $all ' + JSON.stringify(res));
-               mongostash[allPath][splitPath[1]].push(res);
+               //if (mongostash[allPath] === undefined) { 
+               //   mongostash[allPath] = {};
+               //   mongostash[allPath][splitPath[1]] = [];
+               //}
+               //adding a record to the $all query cache causes duplicates on
+               //when doc is resaved.  Let's just clear the cache and let it 
+               //repopulate on the next load.
+               //conLog('adding record to cache for $all ' + JSON.stringify(res)); 
+               //mongostash[allPath][splitPath[1]].push(res);
+               delete mongostash[allPath];
                conLog('populating caches for single document to ' + JSON.stringify(returnColl));
                mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + newID] = returnColl;
                cb(null, returnColl);

@@ -75,15 +75,18 @@ mongobook.saveAddress = function(event, del){
    var uiConfirm = function(oldID) { 
       //return a callback that updates the loading gif with the done gif
       return function() {
-         var doneImg = $('<img src="ajax-loader-done.gif" />');
+         var doneImg = $('<img src="ajax-loader-done.gif" class="hidden"/>');
+         var blankImg = $('<img src="ajax-loader-blank.gif"/>');
          var rowImageCol = ($('#rows').find('td.hidden:contains(' + oldID + ')').parent()
          .find('td').last());
-         rowImageCol.closest('img').remove();
+         rowImageCol.find('img').remove();
          doneImg.prependTo(rowImageCol).fadeIn('slow'); 
 
          setTimeout(function() {
-            doneImg.fadeOut('slow', function() {doneImg.remove();});
-         }, 9000);
+            doneImg.fadeOut('slow', function() {
+               doneImg.replaceWith(blankImg);
+            });
+         }, 4000);
       };
    };
 
@@ -95,7 +98,7 @@ mongobook.saveAddress = function(event, del){
    controller.updateViews(updatePaths,
                           newAddressData,
                           elementsForRefresh,
-                          [uiConfirm(oldID), null, null]);
+                          [null, null, uiConfirm(oldID)]);
    return false;
 };
 
