@@ -82,7 +82,7 @@ mongobook.saveAddress = function(event, del){
          rowImageCol.find('img').remove();
          $('#' + oldID).find('.btn-save').removeAttr('disabled');
          doneImg.prependTo(rowImageCol).fadeIn('slow'); 
-         $('#' + oldID).find('.btn-save').next().replaceWith('<img src="ajax-loader-done.gif" class="hidden" />');
+         $('#' + oldID).find('.btn-save').next().replaceWith('<img src="ajax-loader-done.gif" style="display:none">');
          $('#' + oldID).find('.btn-save').next().fadeIn('slow');
          $('#' + oldID).find('.form-actions').css('cursor','');
 
@@ -161,5 +161,8 @@ $(document).ready(function() {
       $('#' + id).remove();                                //remove address details
       $(this).closest('li').remove();                //remove tab
       return false;
-   });   
+   });  
+
+   $('<img src="ajax-loader.gif" />'); //preload
+   $('<img src="ajax-loader-done.gif" />'); //preload
 });
