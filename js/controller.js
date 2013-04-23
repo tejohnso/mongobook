@@ -6,8 +6,12 @@ controller.loadTemplates = function(templateNames) {
    controller.templates = {};
    controller.views = {};
    $.each(templateNames, function(idx, val) {
-      $.get(val + '.mu', function(data) {
-         controller.templates[val] = Mustache.compile(data);
+      $.ajax({
+         url: val + '.mu',
+         async: false,
+         success: function(data) {
+            controller.templates[val] = Mustache.compile(data);
+         }
       });
    });
 };
@@ -30,7 +34,7 @@ controller.renderView = function(path, insertInto, cb) {
          var getPath = path.split('/'); //the server sees the collection name
          getPath[1] = mongobook.templateDataSourceCollections[getPath[1]];
          $.get(getPath.join('/'), function(data) {
-            controller.views[path] = controller.templates[path.split('/')[1]](JSON.parse(data)).trim();
+            controller.views[path] = controller.templates[path.split('/')[1]](data).trim();
             newElements = $(controller.views[path]).prependTo(insertInto);
             if (cb) {cb(newElements);}
          });
@@ -73,8 +77,6 @@ controller.updateViews = function(paths, templateDocs, affectedElements, cbs) {
          var newPath;
          if ($.isNumeric(returnedDocs[idx])) {
             returnedDocs[idx] = returnedDocs[returnedDocs[idx]];
-         } else {
-            returnedDocs[idx] = JSON.parse(returnedDocs[idx]);
          }
          oldDoc = multipleSourceDocuments ? templateDocs[idx] : templateDocs;
          searchField = val.split('/')[2];

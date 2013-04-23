@@ -46,6 +46,7 @@ app.all('*', function(request, response, next) {
    var callBack = function(err, docs) {
       if (err) {conLog(err); response.end();}
       conLog('returning: ' + JSON.stringify(docs));
+      response.setHeader("Content-Type", "application/json");
       response.end(JSON.stringify(docs));   
    };
    mongostash.documentAction(request.path, request.body, request.method, callBack);

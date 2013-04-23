@@ -15,6 +15,7 @@ mongobook.appendNewAddress = function(docID) {
    var templateContainers = ['#addressPanes', '#tabs'];
    var path = '_id/' + docID;
    var newTabCallback = function(newTab) {
+      $('#addresses .tab-pane').removeClass('active');
       newTab.find('a').click();
       $(newTab.find('a').attr('href')).find('input').first().focus();
    };
@@ -68,7 +69,7 @@ mongobook.saveAddress = function(event, del){
    //need to be removed and re-rendered after all posts are completed
    var elementsForRefresh = [
       $('#' + oldID),
-      $('#tabs').find('a[href=' + oldID + ']'),
+      $('#tabs').find('a[href=#' + oldID + ']').parent(),
       $('#rows').find('td.hidden:contains(' + oldID + ')').parent()];
 
    var uiConfirm = function(oldID) { 

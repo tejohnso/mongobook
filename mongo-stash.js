@@ -63,6 +63,7 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
                      if (docs === null) {cb(null, ret); return;} 
                      if (docs[0] === undefined) {docs[0] = {};} //no results found
                      ret[splitPath[1]] = docs; 
+                     conLog('resetting cache for ' + query + ' to ' + JSON.stringify(ret));
                      mongostash[query] = ret;
                      cb(null, mongostash[query]);
                   });
@@ -78,10 +79,10 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
             if (splitPath[3] === '$new') {
                searchObject = {"_id": {"$exists": false}};
             }
-            conLog('updating record' + JSON.stringify(searchObject) + ' with ' + 
-            JSON.stringify(clientDoc));
             var del = (action === 'DELETE' ? true : false);      
             delete clientDoc._id; //never need to overwrite or create an _id in a doc
+            conLog('updating record' + JSON.stringify(searchObject) + ' with ' + 
+            JSON.stringify(clientDoc));
             coll.findAndModify(searchObject, {}, clientDoc, 
             {"upsert": true, "new": true, "remove": del}, function(err, res) {
                var returnVal = {};
@@ -96,11 +97,16 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
                   return;
                }
                var newID = res[splitPath[3]];
-               conLog('populating caches for $all and single document');
                var returnColl = {};
                returnColl[splitPath[1]] = [];
                returnColl[splitPath[1]].push(res);
-               mongostash[allPath] = returnColl;
+               if (mongostash[allPath] === undefined) { 
+                  mongostash[allPath] = {};
+                  mongostash[allPath][splitPath[1]] = [];
+               }
+               conLog('adding record to cache for $all ' + JSON.stringify(res));
+               mongostash[allPath][splitPath[1]].push(res);
+               conLog('populating caches for single document to ' + JSON.stringify(returnColl));
                mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + newID] = returnColl;
                cb(null, returnColl);
             });
