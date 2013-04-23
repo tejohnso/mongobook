@@ -61,30 +61,37 @@ mongobook.saveAddress = function(event, del){
    var oldID = newAddressData._id;
    var updatePaths = ['/address/_id/' + oldID,
                      '/addressTabTitle/_id/' + oldID,
-                     'addresses/_id/' + oldID]; 
-   delete newAddressData._id; //never try to update an id in an existing document
+                     '/addresses/_id/' + oldID]; 
+   //elementSelectors will be passed into updateViews.  
+   //Each array index will be one or more selector strings that 
+   //need to be removed and re-rendered after all posts are completed
+   var elementsForRefresh = [
+      $('#' + oldID),
+      $('#tabs').find('a[href=' + oldID + ']'),
+      $('#rows').find('td.hidden:contains(' + oldID + ')').parent()];
+
+   var uiConfirm = function(oldID) { 
+      //return a callback that updates the loading gif with the done gif
+      return function() {
+         var doneImg = $('<img src="ajax-loader-done.gif" />');
+         doneImg.prependTo($('#rows').find('td.hidden:contains(' + oldID + ')').parent()
+         .find('td').last().html('<img src="ajax-loader-done.gif" />')).fadeIn('slow'); 
+
+         setTimeout(function() {
+            doneImg.fadeOut('slow', function() {doneImg.remove();});
+         }, 3000);
+      };
+   };
+
    $('#rows').find('td.hidden:contains(' + oldID + ')').parent()
    .find('td').last().html('<img src="ajax-loader.gif" />'); //add the spinner
 
-   var uiConfirm = function(oldID) { //build the return function dynamically to keep oldID
-      return function(returnedDoc) {
-      //update the UI - Instead of all this manual hunting and pecking,
-      //we should bind elements to specific UI events (eg: 'updatedID') and each
-      //one of them can automagically do something when that even is seen.  
-      //So I guess templates should be associated with a group of elements, 
-      //which have their bindings attached at template load time with $().on()
-         $('#rows').find('td.hidden:contents(' + oldID + ')').parent()
-         .find('td').find('.hidden').html(returnedDoc._id); //update the id in the list row
-         button.closest('input[name=_id]').val(id); //update the id in the save button
-         $(tabID).attr('id', '#' + id); //update the id in the tab contents 
-         $('#tabs').find('a[href=' + tabID + ']').attr('href', '#' + id); //tab link
-         newRow.find('td').last().html(''); //remove the loading gif
-      };
-   };
-   
-   //update all the appropriate local view caches.  After the first one completes
+   //update all the appropriate local view caches and server. After the first one completes
    //we will indicate success on the ui since these all have the same data source.
-   controller.updateViews(updatePaths, newAddressData, [uiConfirm(oldID), null, null]);
+   controller.updateViews(updatePaths,
+                          newAddressData,
+                          elementsForRefresh,
+                          [uiConfirm(oldID), null, null]);
    return false;
 };
 

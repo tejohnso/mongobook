@@ -1,3 +1,4 @@
+{{#addresses}}
 <div class='tab-pane active' id='{{_id}}'>
    <form>
       <fieldset>
@@ -30,3 +31,4 @@
       </div>
    </form>
 </div>
+{{/addresses}}

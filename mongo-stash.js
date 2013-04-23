@@ -24,6 +24,9 @@ var mongostash = function(dbOrURL, cb) {
 };
 
 mongostash.documentAction = function(query, clientDoc, action, cb) {
+   //returned document collection will always be
+   //{"collectionName": array of one or more docs} for GETs
+   //controller maps view paths (template names) to the proper collection name
    var splitPath = query.split('/');
    if (splitPath.length < 3) { 
       conLog('bad path - ' + query);
@@ -32,7 +35,7 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
    mongostash.db.collection(splitPath[1], function(err, coll) {
       if (err) {cb(err);return;}
       var searchObject = {}, searchObjectText = {}, searchObjectNum = {};
-      if (splitPath[2] === "_id" && splitPath[3] !== '$all') {
+      if (splitPath[2] === "_id" && splitPath[3] !== '$all' && splitPath[3] !== '$new') {
          searchObject._id = new mongo.ObjectID(splitPath[3]); //mongo.BSONPure.ObjectID.createFromHexString(splitPath[3]);
       } else if (splitPath[3] === '$all') {
          searchObject[splitPath[2]] = {$exists: true};
@@ -42,7 +45,7 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
          searchObject = {"$or": [searchObjectText, searchObjectNum]};
       }
       switch (action) {
-         case 'GET':
+         case 'GET': //always return an object with a document array
             conLog('GETting ' + query);
             if (mongostash.hasOwnProperty(query)) {
                conLog('CACHE fetch for ' + query);
@@ -52,32 +55,34 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
                coll.find(searchObject, function(err, curs) {
                   if (err) {if (cb) {cb(err);} else {throw err;}}
                   curs.toArray(function(err, docs) {
+                     var ret = {};
+                     ret[splitPath[1]] = [];
                      if (err) {if (cb) {cb(err);} else {throw err;}}
-                     if (docs === null) {cb(null, {}); return;} 
-                     if (docs.length > 1) {
-                        var ret = {}; //multiple documents return as {'template': docArray}
-                        ret[splitPath[1]] = docs; 
-                        mongostash[query] = ret;
-                     } else {
-                        if (docs[0] === undefined) {docs[0] = {};} //no results found
-                        mongostash[query] = docs[0];
-                     }
+                     if (docs === null) {cb(null, ret); return;} 
+                     if (docs[0] === undefined) {docs[0] = {};} //no results found
+                     ret[splitPath[1]] = docs; 
+                     mongostash[query] = ret;
                      cb(null, mongostash[query]);
                   });
                });
             }
          break;
-         case 'POST':  //these will need to update mongostash[query]
+         case 'POST':  //these will always return one doc
          case 'DELETE':
             if (splitPath[3] === '$all') {
                cb('Cannot POST or DELETE on ALL records!');
                return;
             }
+            if (splitPath[3] === '$new') {
+               searchObject = {"_id": {"$exists": false}};
+            }
             conLog('updating record' + JSON.stringify(searchObject) + ' with ' + 
-               JSON.stringify(clientDoc));
-            var del = (action === 'DELETE' ? true : false);
+            JSON.stringify(clientDoc));
+            var del = (action === 'DELETE' ? true : false);      
+            delete clientDoc._id; //never need to overwrite or create an _id in a doc
             coll.findAndModify(searchObject, {}, clientDoc, 
             {"upsert": true, "new": true, "remove": del}, function(err, res) {
+               var returnVal = {};
                if (err) {cb(err); return;}
                var allPath = '/' + splitPath[1] + '/' + splitPath[2] + '/$all';
                if (del === true) {
@@ -89,10 +94,13 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
                   return;
                }
                var newID = res[splitPath[3]];
-               conLog('populating cache for ' + allPath + 'i' + splitPath[1] + ']'); 
-               mongostash[allPath][splitPath[1]].push(res);
-               mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + newID] = res;
-               cb(null, res);
+               conLog('populating caches for $all and single document');
+               var returnColl = {};
+               returnColl[splitPath[1]] = [];
+               returnColl[splitPath[1]].push(res);
+               mongostash[allPath] = returnColl;
+               mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + newID] = returnColl;
+               cb(null, returnColl);
             });
          break;
       }

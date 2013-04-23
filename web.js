@@ -37,7 +37,8 @@ app.all('*', function(request, response, next) {
    conLog('processing collection: ' + splitPath[1]);
    conLog('searching field: ' + splitPath[2]);
    conLog('processing target: ' + splitPath[3]);
-   if (splitPath[2] === '_id' && splitPath[3].length !== 24 && splitPath[3] !== '$all') {
+   if (splitPath[2] === '_id' && splitPath[3].length !== 24 
+   && splitPath[3] !== '$all' && splitPath[3] !== '$new') {
       conLog('bad document id - redirecting');
       response.redirect('/');
       return;
