@@ -70,7 +70,7 @@ controller.updateViews = function(paths, templateDocs, affectedElements, cbs) {
          //check to see if the search field in the path is different. 
          //if so, delete view, otherwise just overwrite
          //our return document may point to another index if it was the same post path
-         
+         var newPath;
          if ($.isNumeric(returnedDocs[idx])) {
             returnedDocs[idx] = returnedDocs[returnedDocs[idx]];
          } else {
@@ -82,17 +82,18 @@ controller.updateViews = function(paths, templateDocs, affectedElements, cbs) {
          if (oldDoc[searchField] !== returnedDoc[searchField]) {
             delete controller.views[val];
          }
-         controller.views['/' + val.split('/')[1] + '/' + searchField + 
-         '/' + returnedDoc[searchField]] = controller.
+         newPath = '/' + val.split('/')[1] + '/' + searchField + 
+         '/' + returnedDoc[searchField];
+         controller.views[newPath] = controller.
          templates[val.split('/')[1]](returnedDocs[idx]).trim();
 
          //replace old elements with newly fetched doc call renderviews
          if ($.isArray(affectedElements[idx])) {
             $.each(affectedElements[idx], function() {
-               affectedElements[idx].replaceWith($(controller.views[val]));
+               affectedElements[idx].replaceWith($(controller.views[newPath]));
             });
          } else {
-            $(affectedElements[idx]).replaceWith($(controller.views[val]));
+            $(affectedElements[idx]).replaceWith($(controller.views[newPath]));
          }
          if (cbs[idx]) {cbs[idx](returnedDoc);}  // Trigger our ui confirmation 
       });
@@ -102,12 +103,12 @@ controller.updateViews = function(paths, templateDocs, affectedElements, cbs) {
       var postID = val.split('/')[3];
       if (multipleSourceDocuments) {newDoc = templateDocs[idx];}
       controller.views[val] = controller.templates[val.split('/')[1]](newDoc).trim();
-      dataSourcePath = mongobook.templateDataSourceCollections[val.split('/')[1]];
-      dataSourcePath = '/' + dataSourcePath + '/' + val.split('/')[2] + '/' + postID;
-      sourceIndex = updatedDataSources.indexOf(dataSourcePath);
       if (val.split('/')[2] === '_id' && postID.length !== 24) {
          postID = '$new';
       }
+      dataSourcePath = mongobook.templateDataSourceCollections[val.split('/')[1]];
+      dataSourcePath = '/' + dataSourcePath + '/' + val.split('/')[2] + '/' + postID;
+      sourceIndex = updatedDataSources.indexOf(dataSourcePath);
       if (sourceIndex === -1 || multipleSourceDocuments) { //un-updated datasource
          $.ajax({
             url: dataSourcePath,

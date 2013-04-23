@@ -7,7 +7,9 @@ var mongostash = function(dbOrURL, cb) {
       conLog('creating connection for template load');
       Db.connect(dbOrURL, function(err, db) {
          //if (err) {if (cb) {cb(err);} else {throw err;}}
-         if (err) {conLog(err); return mongostash(dbOrURL, cb);}
+         if (err) {conLog(err); return setTimeout(function() {
+            mongostash(dbOrURL, cb);
+         }, 4000);}
          mongostash.db = db;
          if (cb) {cb();}
       });

@@ -10,7 +10,7 @@ mongobook.appendNewAddress = function(docID) {
    //create the new address panel then create the tab for it - then click the tab
    //also create the row in the address list - no view caches are updated until SAVE
 
-   var templatePaths;
+   var templatePaths;  
    var templates = ['/address/', '/addressTabTitle/'];
    var templateContainers = ['#addressPanes', '#tabs'];
    var path = '_id/' + docID;
@@ -20,16 +20,17 @@ mongobook.appendNewAddress = function(docID) {
    };
    var callbacks = [null, newTabCallback];
    if (docID === '') {
-
+      //can render a temporary view locally by specifying JSON in the path
       //for a new BLANK address, we need to add a new row and set the _id
-      docID = Math.random().toString().substr(2, 18);
-      path = '{"first":"first","last":"last","_id":"' + docID + '"}';
       templates.push('/addresses/');
+      docID = Math.random().toString().substr(2, 18);
+      path = '{"addresses": [{"first":"first","last":"last","_id":"' + docID + '"}]}';
+      
       templateContainers.push('#rows');
       callbacks.push(null);
    }
-   templatePaths = [path, path, '{"addresses": [' + path + ']}'];
-
+   templatePaths = [path, path, path];
+   
    $.each(templates, function(idx, template) {
       controller.renderView(template + templatePaths[idx], 
                             templateContainers[idx],
@@ -74,12 +75,14 @@ mongobook.saveAddress = function(event, del){
       //return a callback that updates the loading gif with the done gif
       return function() {
          var doneImg = $('<img src="ajax-loader-done.gif" />');
-         doneImg.prependTo($('#rows').find('td.hidden:contains(' + oldID + ')').parent()
-         .find('td').last().html('<img src="ajax-loader-done.gif" />')).fadeIn('slow'); 
+         var rowImageCol = ($('#rows').find('td.hidden:contains(' + oldID + ')').parent()
+         .find('td').last());
+         rowImageCol.closest('img').remove();
+         doneImg.prependTo(rowImageCol).fadeIn('slow'); 
 
          setTimeout(function() {
             doneImg.fadeOut('slow', function() {doneImg.remove();});
-         }, 3000);
+         }, 9000);
       };
    };
 
