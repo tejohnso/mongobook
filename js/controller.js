@@ -20,6 +20,10 @@ controller.loadTemplates = function(templateNames) {
 //can be rendered with a local url string uncached meant to be temporary
 //the resulting view will be inserted into the passed in jQuery select string and
 //the callback will be called on the newly inserted element tree
+//UPDATE REQUIRED
+//rendreView should be renderViews
+//it should take multiple paths simultaneously like updateViews does and it should only
+//hit the server once for each unique data source in the group of paths passed in.
 controller.renderView = function(path, insertInto, cb) {
    var newElements;
    if (path.indexOf('{') > -1) { 

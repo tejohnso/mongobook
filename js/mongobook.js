@@ -43,7 +43,7 @@ mongobook.delAddress = function(event) {
    
    //remove 3 elements - clear caches (2 local, 2 remote)
    var button = $(event.target);
-   var id = button.parent().find('input[name=_id]').val();
+   var id = button.closest('.form-actions').find('input[name=_id]').val();
    $('#tabs').find('a[href=#' + id + ']').closest('li').remove();
    $('#' + id).remove();
    $('#rows').find('td.hidden:contains(' + id + ')').closest('tr').remove();
@@ -165,4 +165,5 @@ $(document).ready(function() {
 
    $('<img src="ajax-loader.gif" />'); //preload
    $('<img src="ajax-loader-done.gif" />'); //preload
+   $('<img src="glyphicons-halflings.png" />'); //preload
 });
