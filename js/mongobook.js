@@ -76,13 +76,20 @@ mongobook.saveAddress = function(event, del){
       //return a callback that updates the loading gif with the done gif
       return function() {
          var doneImg = $('<img src="ajax-loader-done.gif" class="hidden"/>');
-         var blankImg = $('<img src="ajax-loader-blank.gif"/>');
+         var blankImg = '<img src="ajax-loader-blank.gif"/>';
          var rowImageCol = ($('#rows').find('td.hidden:contains(' + oldID + ')').parent()
          .find('td').last());
          rowImageCol.find('img').remove();
+         $('#' + oldID).find('.btn-save').removeAttr('disabled');
          doneImg.prependTo(rowImageCol).fadeIn('slow'); 
+         $('#' + oldID).find('.btn-save').next().replaceWith('<img src="ajax-loader-done.gif" class="hidden" />');
+         $('#' + oldID).find('.btn-save').next().fadeIn('slow');
+         $('#' + oldID).find('.form-actions').css('cursor','');
 
          setTimeout(function() {
+            $('#' + oldID).find('.btn-save').next().fadeOut('slow', function() {
+               $('#' + oldID).find('.btn-save').next().replaceWith(blankImg);
+            });
             doneImg.fadeOut('slow', function() {
                doneImg.replaceWith(blankImg);
             });
@@ -92,6 +99,9 @@ mongobook.saveAddress = function(event, del){
 
    $('#rows').find('td.hidden:contains(' + oldID + ')').parent()
    .find('td').last().html('<img src="ajax-loader.gif" />'); //add the spinner
+   $('#' + oldID).find('.btn-save').attr('disabled', 'disabled');
+   $('#' + oldID).find('.btn-save').next().replaceWith('<img src="ajax-loader.gif" />');
+   $('#' + oldID).find('.form-actions').css('cursor','progress');
 
    //update all the appropriate local view caches and server. After the first one completes
    //we will indicate success on the ui since these all have the same data source.

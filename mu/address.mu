@@ -26,8 +26,14 @@
       </fieldset>
       <div class='form-actions'>
          <input type='hidden' name='_id' value='{{_id}}'>
+         <div class='input-append'>
          <button type='submit' class='btn btn-save btn-info'>Save</button>
+         <img src="ajax-loader-blank.gif" />
+         </div>
+         <div class='input-append'>
          <button type='submit' class='btn btn-delete btn-danger'>Delete</button>
+         <img src="ajax-loader-blank.gif" />
+         </div>
       </div>
    </form>
 </div>
