@@ -47,7 +47,7 @@ mongobook.delAddress = function(event) {
    $('#tabs').find('a[href=#' + id + ']').closest('li').remove();
    $('#' + id).remove();
    $('#rows').find('td.hidden:contains(' + id + ')').closest('tr').remove();
-   delete controller.views['/addresses/_id/$all'];
+   delete controller.views['/addresses/_id'];
    delete controller.views['/addresses/_id/' + id];
    $.ajax({
       url: '/addresses/_id/' + id,
@@ -123,7 +123,7 @@ mongobook.urlQueryToObject = function(query) {
 
 $(document).ready(function() {
    controller.loadTemplates(["address", "addresses", "addressTabTitle"]);
-   controller.renderView('/addresses/_id/$all', '.table-striped tbody', function(view) {
+   controller.renderView('/addresses/_id', '.table-striped tbody', function(view) {
       $('.btn-primary').on('click', function(event) {
          mongobook.appendNewAddress('');
          return false; 

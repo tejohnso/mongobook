@@ -32,22 +32,12 @@ app.get('/', function(request, response, next) {
 });
 
 app.all('*', function(request, response, next) {
-   var splitPath = request.path.split('/');  //path is /[template]/[field]/[target]
    conLog('\n' + request.method + ' processing path: ' + request.path);
-   conLog('processing collection: ' + splitPath[1]);
-   conLog('searching field: ' + splitPath[2]);
-   conLog('processing target: ' + splitPath[3]);
-   if (splitPath[2] === '_id' && splitPath[3].length !== 24 
-   && splitPath[3] !== '$all' && splitPath[3] !== '$new') {
-      conLog('bad document id - redirecting');
-      response.redirect('/');
-      return;
-   }
-   var callBack = function(err, docs) {
+   var cb = function(err, docs) {
       if (err) {conLog(err); response.end();}
       conLog('returning: ' + JSON.stringify(docs));
       response.setHeader("Content-Type", "application/json");
       response.end(JSON.stringify(docs));   
    };
-   mongostash.documentAction(request.path, request.body, request.method, callBack);
+   mongostash.documentAction(request.path.split('/'), request.body, request.method, cb);
 });

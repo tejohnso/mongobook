@@ -110,7 +110,7 @@ controller.updateViews = function(paths, templateDocs, affectedElements, cbs) {
       if (multipleSourceDocuments) {newDoc = templateDocs[idx];}
       controller.views[val] = controller.templates[val.split('/')[1]](newDoc).trim();
       if (val.split('/')[2] === '_id' && postID.length !== 24) {
-         postID = '$new';
+         postID = '';
       }
       dataSourcePath = mongobook.templateDataSourceCollections[val.split('/')[1]];
       dataSourcePath = '/' + dataSourcePath + '/' + val.split('/')[2] + '/' + postID;
@@ -118,7 +118,7 @@ controller.updateViews = function(paths, templateDocs, affectedElements, cbs) {
       if (sourceIndex === -1 || multipleSourceDocuments) { //un-updated datasource
          $.ajax({
             url: dataSourcePath,
-            type: 'POST', //posting to the server will update its cache
+            type: 'PUT', //posting to the server will update its cache
             data: newDoc,
             success: function(data) { 
                //add counter to the listener. 

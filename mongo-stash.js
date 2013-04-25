@@ -25,21 +25,19 @@ var mongostash = function(dbOrURL, cb) {
    return mongostash;
 };
 
-mongostash.documentAction = function(query, clientDoc, action, cb) {
+mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
    //returned document collection will always be
    //{"collectionName": array of one or more docs} for GETs
-   //controller maps view paths (template names) to the proper collection name
-   var splitPath = query.split('/');
-   if (splitPath.length < 3) { 
-      conLog('bad path - ' + query);
-      return;
-   }
+   //client side controller maps view paths (template names) to the proper collection name
+   var query = splitPath.join('/');
    mongostash.db.collection(splitPath[1], function(err, coll) {
       if (err) {cb(err);return;}
       var searchObject = {}, searchObjectText = {}, searchObjectNum = {};
-      if (splitPath[2] === "_id" && splitPath[3] !== '$all' && splitPath[3] !== '$new') {
+
+      if (splitPath[2] === "_id" && splitPath[3]) {
+         if (splitPath[3].length !== 24) {conLog('invalid id'); return {};}
          searchObject._id = new mongo.ObjectID(splitPath[3]); //mongo.BSONPure.ObjectID.createFromHexString(splitPath[3]);
-      } else if (splitPath[3] === '$all') {
+      } else if (splitPath[2] === '_id') {
          searchObject[splitPath[2]] = {$exists: true};
       } else {
          searchObjectText[splitPath[2]] = splitPath[3].toString();
@@ -48,6 +46,7 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
       }
       switch (action) {
          case 'GET': //always return an object with a document array
+
             conLog('GETting ' + query);
             if (mongostash.hasOwnProperty(query)) {
                conLog('CACHE fetch for ' + query);
@@ -70,48 +69,43 @@ mongostash.documentAction = function(query, clientDoc, action, cb) {
                });
             }
          break;
-         case 'POST':  //these will always return one doc
-         case 'DELETE':
-            if (splitPath[3] === '$all') {
-               cb('Cannot POST or DELETE on ALL records!');
-               return;
+         case 'DELETE':  //these will always return one doc
+            if (splitPath[3] === '' || splitPath[3] === undefined) {
+               cb('Cannot DELETE on ALL records!');
+               return {};
             }
-            if (splitPath[3] === '$new') {
+            conLog('deleting record' + JSON.stringify(searchObject)); 
+            coll.remove(searchObject, function(err, res) {
+               if (err) {cb(err); return;}
+               conLog('clearing cache for ' + '/' + splitPath[1] + '/' + splitPath[2]);
+               conLog('clearing cache for ' + query);
+               delete mongostash['/' + splitPath[1] + '/' + splitPath[2]];
+               delete mongostash[query];
+               cb(null, res);
+               return clientDoc;
+            });
+         break;
+         case 'PUT':
+            if (splitPath[3] === '' || splitPath[3] === undefined) {
                searchObject = {"_id": {"$exists": false}};
             }
-            var del = (action === 'DELETE' ? true : false);      
+            
             delete clientDoc._id; //never need to overwrite or create an _id in a doc
             conLog('updating record' + JSON.stringify(searchObject) + ' with ' + 
             JSON.stringify(clientDoc));
             coll.findAndModify(searchObject, {}, clientDoc, 
-            {"upsert": true, "new": true, "remove": del}, function(err, res) {
-               var returnVal = {};
-               if (err) {cb(err); return;}
-               var allPath = '/' + splitPath[1] + '/' + splitPath[2] + '/$all';
-               if (del === true) {
-                  conLog('clearing cache for ' + allPath);
-                  conLog('clearing cache for ' + query);
-                  delete mongostash[allPath];
-                  delete mongostash[query];
-                  cb(null, res);
-                  return;
-               }
-               var newID = res[splitPath[3]];
+            {"upsert": true, "new": true}, function(err, res) {
                var returnColl = {};
+               if (err) {cb(err); return;}
                returnColl[splitPath[1]] = [];
                returnColl[splitPath[1]].push(res);
-               //if (mongostash[allPath] === undefined) { 
-               //   mongostash[allPath] = {};
-               //   mongostash[allPath][splitPath[1]] = [];
-               //}
-               //adding a record to the $all query cache causes duplicates on
-               //when doc is resaved.  Let's just clear the cache and let it 
-               //repopulate on the next load.
-               //conLog('adding record to cache for $all ' + JSON.stringify(res)); 
-               //mongostash[allPath][splitPath[1]].push(res);
-               delete mongostash[allPath];
-               conLog('populating caches for single document to ' + JSON.stringify(returnColl));
-               mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + newID] = returnColl;
+               
+               //cache for a search on all documents is now stale but can't be easily
+               //refreshed because subsequent adds would create duplicates.
+               //a duplicate check on cache insertion would be required
+               delete mongostash['/' + splitPath[1] + '/' + splitPath[2]];
+               conLog('populating cache for single document to ' + JSON.stringify(returnColl));
+               mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + res[splitPath[2]]] = returnColl;
                cb(null, returnColl);
             });
          break;
