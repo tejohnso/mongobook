@@ -1,13 +1,12 @@
 var mongo = require('mongodb');
 var Db = mongo.Db;
-var conLog = require('./conLog.js')(1);
 
 var mongostash = function(dbOrURL, cb) {
    if (typeof dbOrURL === 'string') {
-      conLog('creating connection for template load');
+      console.log('creating connection to database');
       Db.connect(dbOrURL, function(err, db) {
          //if (err) {if (cb) {cb(err);} else {throw err;}}
-         if (err) {conLog(err); return setTimeout(function() {
+         if (err) {console.log(err); return setTimeout(function() {
             mongostash(dbOrURL, cb);
          }, 4000);}
          mongostash.db = db;
@@ -25,7 +24,7 @@ var mongostash = function(dbOrURL, cb) {
    return mongostash;
 };
 
-mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
+mongostash.documentAction = function(splitPath, clientDoc, action, dev, cb) {
    //returned document collection will always be
    //{"collectionName": array of one or more docs} for GETs
    //client side controller maps view paths (template names) to the proper collection name
@@ -35,11 +34,12 @@ mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
       var searchObject = {}, searchObjectText = {}, searchObjectNum = {};
 
       if (splitPath[2] === "_id" && splitPath[3]) {
-         if (splitPath[3].length !== 24) {conLog('invalid id'); return {};}
+         if (splitPath[3].length !== 24) {return next('invalid id');}
          searchObject._id = new mongo.ObjectID(splitPath[3]); //mongo.BSONPure.ObjectID.createFromHexString(splitPath[3]);
       } else if (splitPath[2] === '_id') {
          searchObject[splitPath[2]] = {$exists: true};
       } else {
+         if (splitPath.length < 4) {cb('invalid path'); return;}
          searchObjectText[splitPath[2]] = splitPath[3].toString();
          searchObjectNum[splitPath[2]] = parseInt(splitPath[3], 10);
          searchObject = {"$or": [searchObjectText, searchObjectNum]};
@@ -47,22 +47,25 @@ mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
       switch (action) {
          case 'GET': //always return an object with a document array
 
-            conLog('GETting ' + query);
+            if (dev) {console.log('GETting ' + query);}
             if (mongostash.hasOwnProperty(query)) {
-               conLog('CACHE fetch for ' + query);
+               if (dev) {console.log('CACHE fetch for ' + query);}
                cb(null, mongostash[query]);
             } else {
-               conLog('querying database for ' + JSON.stringify(searchObject));
+               if (dev) {
+                  console.log('querying database for ' + JSON.stringify(searchObject));
+               }
                coll.find(searchObject, function(err, curs) {
-                  if (err) {if (cb) {cb(err);} else {throw err;}}
+                  if (err) {if (cb) {cb(err);} else {throw next(err);}}
                   curs.toArray(function(err, docs) {
                      var ret = {};
                      ret[splitPath[1]] = [];
-                     if (err) {if (cb) {cb(err);} else {throw err;}}
+                     if (err) {if (cb) {cb(err);} else {next(err);}}
                      if (docs === null) {cb(null, ret); return;} 
                      if (docs[0] === undefined) {docs[0] = {};} //no results found
                      ret[splitPath[1]] = docs; 
-                     conLog('resetting cache for ' + query + ' to ' + JSON.stringify(ret));
+                     if (dev) {console.log('resetting cache for ' + 
+                     query + ' to ' + JSON.stringify(ret));}
                      mongostash[query] = ret;
                      cb(null, mongostash[query]);
                   });
@@ -71,14 +74,16 @@ mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
          break;
          case 'DELETE':  //these will always return one doc
             if (splitPath[3] === '' || splitPath[3] === undefined) {
-               cb('Cannot DELETE on ALL records!');
-               return {};
+               return cb('Cannot DELETE on ALL records!');
             }
-            conLog('deleting record' + JSON.stringify(searchObject)); 
+            if (dev) {console.log('deleting record' + JSON.stringify(searchObject));}
             coll.remove(searchObject, function(err, res) {
                if (err) {cb(err); return;}
-               conLog('clearing cache for ' + '/' + splitPath[1] + '/' + splitPath[2]);
-               conLog('clearing cache for ' + query);
+               if (dev) {
+                  console.log('clearing cache for ' + 
+                  '/' + splitPath[1] + '/' + splitPath[2]);
+                  console.log('clearing cache for ' + query);
+               }
                delete mongostash['/' + splitPath[1] + '/' + splitPath[2]];
                delete mongostash[query];
                cb(null, res);
@@ -91,8 +96,10 @@ mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
             }
             
             delete clientDoc._id; //never need to overwrite or create an _id in a doc
-            conLog('updating record' + JSON.stringify(searchObject) + ' with ' + 
-            JSON.stringify(clientDoc));
+            if (dev) {
+               console.log('updating record' + JSON.stringify(searchObject) +
+               ' with ' +  JSON.stringify(clientDoc));
+            }
             coll.findAndModify(searchObject, {}, clientDoc, 
             {"upsert": true, "new": true}, function(err, res) {
                var returnColl = {};
@@ -104,7 +111,10 @@ mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
                //refreshed because subsequent adds would create duplicates.
                //a duplicate check on cache insertion would be required
                delete mongostash['/' + splitPath[1] + '/' + splitPath[2]];
-               conLog('populating cache for single document to ' + JSON.stringify(returnColl));
+               if (dev) {
+                  console.log('populating cache for single document to ' +
+                  JSON.stringify(returnColl));
+               }
                mongostash['/' + splitPath[1] + '/' + splitPath[2] + '/' + res[splitPath[2]]] = returnColl;
                cb(null, returnColl);
             });
@@ -113,6 +123,7 @@ mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
    }); 
 };
 
+module.exports = mongostash;
 /*THIS IS NOT UPDATED FOR MONGOSTASH AND MAY NEVER BE USED 
  
    mongostash.getCollectionFields = function(searchField, collection, cb) {
@@ -133,5 +144,4 @@ mongostash.documentAction = function(splitPath, clientDoc, action, cb) {
    });
 };*/
 
-module.exports = mongostash;
 
